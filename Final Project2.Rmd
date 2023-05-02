@@ -1,0 +1,534 @@
+---
+output:
+  word_document: 
+    fig_caption: yes
+  html_document: default
+---
+
+
+
+```{r}
+getwd()
+
+EUR_USD_dataset = read.csv("Forex Dataset.csv") # historical EUR/USD dataset
+
+```
+```{r}
+library(dplyr) # A grammar library for data manipulation
+
+EUR_USD_dataset = EUR_USD_dataset %>% 
+  rename(
+    TICKVOLUME = TICKVOL,
+    VOLUME = VOL
+    )
+
+View(EUR_USD_dataset)
+```
+* 1.01. Adding Simple Moving Average(SMA) Trend indicator
+```{r}
+library(quantmod)#A Library For Quantitative Financial Modelling
+library(TTR)
+#Simple moving average (SMA)
+sma <-SMA(Op(EUR_USD_dataset),from='2018-03-01',to='2022-03-01')
+EUR_USD_dataset$smaOPEN <- SMA(Op(EUR_USD_dataset),from='2018-03-01',to='2022-03-01')#for OPENING Price
+sma <-SMA(Cl(EUR_USD_dataset),from='2018-03-01',to='2022-03-01')
+EUR_USD_dataset$smaCLOSE <- SMA(Cl(EUR_USD_dataset),from='2018-03-01',to='2022-03-01')#for CLOSING Price
+sma <-SMA(Hi(EUR_USD_dataset),from='2018-03-01',to='2022-03-01')
+EUR_USD_dataset$smaHIGH <- SMA(Hi(EUR_USD_dataset),from='2018-03-01',to='2022-03-01')#for HIGH Price
+sma <-SMA(Lo(EUR_USD_dataset),from='2018-03-01',to='2022-03-01')
+EUR_USD_dataset$smaLOW <- SMA(Lo(EUR_USD_dataset),from='2018-03-01',to='2022-03-01')#for LOW Price
+View(EUR_USD_dataset)
+```
+* 1.01. Check for missing values (NA's) in the records using the summary function.
+* 1.02. Use Data Explorer packages to further analyze records.
+```{r}
+summary(EUR_USD_dataset)
+library(DataExplorer) # A library to automate visual exploration of data 
+plot_intro(EUR_USD_dataset)
+plot_missing(EUR_USD_dataset)
+
+library(mice) # A library for Multivariate Imputation by Chained Equations
+md.pattern(EUR_USD_dataset)
+mice_imputes = mice(EUR_USD_dataset, m = 20, maxit = 40, seed = 10) 
+mice_imputes$method
+
+EUR_USD_dataset = complete(mice_imputes, 20) 
+
+md.pattern(EUR_USD_dataset)
+summary(EUR_USD_dataset) #confirm absence of missing data and gain insights on the data
+View(EUR_USD_dataset)
+#Missing Data Present
+#since number is negligible, we effect complete case analysis
+CleanSet = na.omit(EUR_USD_dataset)
+summary(CleanSet)#confirm absence of missing data and gain insights on the data
+plot_missing(CleanSet)
+View(CleanSet)
+str(CleanSet)
+CleanSet$TICKVOLUME = as.numeric(as.integer(CleanSet$TICKVOLUME))
+CleanSet$VOLUME = as.numeric(as.integer(CleanSet$VOLUME))
+CleanSet$SPREAD = as.numeric(as.integer(CleanSet$SPREAD))
+CleanSet$BULL_BEAR = as.numeric(as.integer(CleanSet$BULL_BEAR))
+str(CleanSet)
+```
+
+#### Univariate Analyses for market Features
+
+*Evaluating standard deviation and kurtosis for each feature
+```{r message=TRUE, warning=TRUE, eval=FALSE}
+library(moments)#A library to visualize our  features
+
+#Histogram for Open
+print(paste0("standard deviation: ", sd(CleanSet$OPEN)))
+print(paste0("Kurtosis: ", round(kurtosis(CleanSet$OPEN),2)))
+
+options(repr.plot.width = 4, repr.plot.height = 4)
+hist(CleanSet$OPEN, breaks=100, prob=TRUE) # Make it a probability distribution
+
+m<-mean(CleanSet$OPEN)
+std<-sqrt
+
+
+#Histogram for High
+print(paste0("standard deviation: ", sd(CleanSet$HIGH)))
+print(paste0("Kurtosis: ", round(kurtosis(CleanSet$HIGH),2)))
+
+options(repr.plot.width = 4, repr.plot.height = 4)
+hist(CleanSet$HIGH, breaks=100, prob=TRUE) # Make it a probability distribution
+
+m<-mean(CleanSet$HIGH)
+std<-sqrt(var(CleanSet$HIGH))
+
+
+#Histogram for Low
+print(paste0("standard deviation: ", sd(CleanSet$LOW)))
+print(paste0("Kurtosis: ", round(kurtosis(CleanSet$LOW),2)))
+
+options(repr.plot.width = 4, repr.plot.height = 4)
+hist(CleanSet$LOW, breaks=100, prob=TRUE) # Make it a probability distribution
+
+m<-mean(CleanSet$LOW)
+std<-sqrt(var(CleanSet$LOW))
+
+
+#Histogram for Close
+print(paste0("standard deviation: ", sd(CleanSet$CLOSE)))
+print(paste0("Kurtosis: ", round(kurtosis(CleanSet$CLOSE),2)))
+
+options(repr.plot.width = 4, repr.plot.height = 4)
+hist(CleanSet$CLOSE, breaks=100, prob=TRUE) # Make it a probability distribution
+
+m<-mean(CleanSet$CLOSE)
+std<-sqrt(var(CleanSet$CLOSE))
+
+
+#Histogram for TickVolume
+print(paste0("standard deviation: ", sd(CleanSet$TICKVOLUME)))
+print(paste0("Kurtosis: ", round(kurtosis(CleanSet$TICKVOLUME),2)))
+
+options(repr.plot.width = 4, repr.plot.height = 4)
+hist(CleanSet$TICKVOLUME, breaks=100, prob=TRUE) # Make it a probability distribution
+m<-mean(CleanSet$TICKVOLUME)
+std<-sqrt(var(CleanSet$TICKVOLUME))
+
+
+#Histogram for Volume
+print(paste0("standard deviation: ", sd(CleanSet$VOLUME)))
+print(paste0("Kurtosis: ", round(kurtosis(CleanSet$VOLUME),2)))
+
+options(repr.plot.width = 4, repr.plot.height = 4)
+hist(CleanSet$VOLUME, breaks=100, prob=TRUE) # Make it a probability distribution
+
+m<-mean(CleanSet$VOLUME)
+std<-sqrt(var(CleanSet$VOLUME))
+
+
+#Histogram for Spread
+print(paste0("standard deviation: ", sd(CleanSet$SPREAD)))
+print(paste0("Kurtosis: ", round(kurtosis(CleanSet$SPREAD),2)))
+
+options(repr.plot.width = 4, repr.plot.height = 4)
+hist(CleanSet$SPREAD, breaks=100, prob=TRUE) # Make it a probability distribution
+
+m<-mean(CleanSet$SPREAD)
+std<-sqrt(var(CleanSet$SPREAD))
+
+
+#Histogram for Bull_Bear
+print(paste0("standard deviation: ", sd(CleanSet$BULL_BEAR)))
+print(paste0("Kurtosis: ", round(kurtosis(CleanSet$BULL_BEAR),2)))
+
+options(repr.plot.width = 4, repr.plot.height = 4)
+hist(CleanSet$BULL_BEAR, breaks=100, prob=TRUE) # Make it a probability distribution
+
+m<-mean(CleanSet$BULL_BEAR)
+std<-sqrt(var(CleanSet$BULL_BEAR))
+
+
+#Histogram for smaOpen
+print(paste0("standard deviation: ", sd(CleanSet$smaOPEN)))
+print(paste0("Kurtosis: ", round(kurtosis(CleanSet$smaOPEN),2)))
+
+options(repr.plot.width = 4, repr.plot.height = 4)
+hist(CleanSet$smaOPEN, breaks=100, prob=TRUE) # Make it a probability distribution
+
+m<-mean(CleanSet$smaOPEN)
+std<-sqrt(var(CleanSet$smaOPEN))
+
+
+#Histogram for smaHigh
+print(paste0("standard deviation: ", sd(CleanSet$smaHIGH)))
+print(paste0("Kurtosis: ", round(kurtosis(CleanSet$smaHigh),2)))
+
+options(repr.plot.width = 4, repr.plot.height = 4)
+hist(CleanSet$smaHIGH, breaks=100, prob=TRUE) # Make it a probability distribution
+
+m<-mean(CleanSet$smaHigh)
+
+
+
+#Histogram for smaLow
+print(paste0("standard deviation: ", sd(CleanSet$smaLOW)))
+print(paste0("Kurtosis: ", round(kurtosis(CleanSet$smaLOW),2)))
+
+options(repr.plot.width = 4, repr.plot.height = 4)
+hist(CleanSet$smaLOW, breaks=100, prob=TRUE) # Make it a probability distribution
+
+m<-mean(CleanSet$smaLOW)
+std<-sqrt(var(CleanSet$smaLOW))
+
+#Histogram for smaClose
+
+print(paste0("standard deviation: ", sd(CleanSet$smaCLOSE)))
+print(paste0("Kurtosis: ", round(kurtosis(CleanSet$smaCLOSE),2)))
+
+options(repr.plot.width = 4, repr.plot.height = 4)
+hist(CleanSet$smaCLOSE, breaks=100, prob=TRUE) # Make it a probability distribution
+
+m<-mean(CleanSet$smaCLOSE)
+std<-sqrt(var(CleanSet$smaCLOSE))
+# Overlay a standard normal distribution
+curve(dnorm(x, mean=m, sd=std), col="darkblue", lwd=2, add=TRUE )
+```
+
+* Median opening price is within opening price 1.10 and 1.15 
+
+* The kurtosis measure describes the tail of a distribution, how similar are the outlying values of the distribution to the standard normal distribution.
+The standard normal distribution has a kurtosis of 0.
+A negative value for kurtosis indicates a thin tailed distribution; the values of the sample are distributed closer to the median than we would expect for a standard normal distribution. A positive kurtosis value indicates we are dealing with a fat tailed distribution, where extreme outcomes are more common than would be predicted by a standard normal distribution.
+Fat-tailed distribution are particularly interesting as it indicates that the market has the capacity to generate significant extreme values that don’t fall into the standard normal distribution.
+From above analysis we can see the price movements largely is fat-tailed. 
+*Our Kurtosis Test indicate strong presence of outliers
+
+
+
+
+
+#### Bivariate Analysis on the dataset
+
+* 1.2. We go on to chart a scatterplot to see the effect of independent variables on the probability of BULL_BEAR
+
+```{r}
+library(ggplot2)#A library for plotting our scatterplot
+#OPEN
+plot(CleanSet$OPEN, CleanSet$BULL_BEAR, pch=16, col='steelblue',
+     main='BULL_BEAR vs. OPEN',
+     xlab='BULL_BEAR', ylab='OPEN')
+#smaOPEN
+plot(CleanSet$smaOPEN, CleanSet$BULL_BEAR, pch=16, col='steelblue',
+     main='BULL_BEAR vs. smaOPEN',
+     xlab='BULL_BEAR', ylab='smaOPEN')
+#CLOSE
+plot(CleanSet$CLOSE, CleanSet$BULL_BEAR, pch=16, col='steelblue',
+     main='BULL_BEAR vs. CLOSE',
+     xlab='BULL_BEAR', ylab='CLOSE')
+#smaCLOSE
+plot(CleanSet$smaCLOSE, CleanSet$BULL_BEAR, pch=16, col='steelblue',
+     main='BULL_BEAR vs. smaCLOSE',
+     xlab='BULL_BEAR', ylab='smaCLOSE')
+#HIGH
+plot(CleanSet$HIGH, CleanSet$BULL_BEAR, pch=16, col='steelblue',
+     main='BULL_BEAR vs. HIGH',
+     xlab='BULL_BEAR', ylab='HIGH')
+#smaHIGH
+plot(CleanSet$smaHIGH, CleanSet$BULL_BEAR, pch=16, col='steelblue',
+     main='BULL_BEAR vs. smaHIGH',
+     xlab='BULL_BEAR', ylab='smaHIGH')
+#TICKVOLUME
+plot(CleanSet$TICKVOLUME, CleanSet$BULL_BEAR, pch=16, col='steelblue',
+     main='BULL_BEAR vs. TICKVOLUME',
+     xlab='BULL_BEAR', ylab='TICKVOLUME')
+#VOLUME
+plot(CleanSet$VOLUME, CleanSet$BULL_BEAR, pch=16, col='steelblue',
+     main='BULL_BEAR vs. VOLUME',
+     xlab='BULL_BEAR', ylab='VOLUME')
+#SPREAD
+plot(CleanSet$SPREAD, CleanSet$BULL_BEAR, pch=16, col='steelblue',
+     main='BULL_BEAR vs. SPREAD',
+     xlab='BULL_BEAR', ylab='SPREAD')
+#LOW
+plot(CleanSet$LOW, CleanSet$BULL_BEAR, pch=16, col='steelblue',
+     main='BULL_BEAR vs. LOW',
+     xlab='BULL_BEAR', ylab='LOW')
+#smaLOW
+plot(CleanSet$smaLOW, CleanSet$BULL_BEAR, pch=16, col='steelblue',
+     main='BULL_BEAR vs. smaLOW',
+     xlab='BULL_BEAR', ylab='smaLOW')
+
+
+```
+
+* 1.2. No cogent inference was drawn from the bivarete analysis except that the dependent correlation shows a positive correlation with the independent variables
+
+* 1.66. Use the psych package to carry out multivariate analysis
+* 1.67. Carry out correlation analysis on the dataset
+
+
+* By default corr.test produces pairwise "Pearson" correlation matrix for the entire dataset
+```{r}
+library(psych) # multivariate analysis
+
+NewCleanSet = CleanSet[,-c(1,5,11)]#data set without date,close and smaCLOSE
+corr.test(NewCleanSet) 
+
+```
+#### Correlation test findings 
+
+* All variables showed very low correlation to BULL_BEAR
+  
+
+
+* 1.69. Check significance of correlations 
+```{r}
+# Check the correlation significance levels
+
+cor.test(NewCleanSet$BULL_BEAR,NewCleanSet$OPEN)$p.value
+cor.test(NewCleanSet$BULL_BEAR,NewCleanSet$HIGH)$p.value 
+cor.test(NewCleanSet$BULL_BEAR,NewCleanSet$LOW)$p.value 
+cor.test(NewCleanSet$BULL_BEAR,NewCleanSet$TICKVOLUME)$p.value 
+cor.test(NewCleanSet$BULL_BEAR,NewCleanSet$VOLUME)$p.value
+cor.test(NewCleanSet$BULL_BEAR,NewCleanSet$SPREAD)$p.value
+cor.test(NewCleanSet$BULL_BEAR,NewCleanSet$smaOPEN)$p.value
+cor.test(NewCleanSet$BULL_BEAR,NewCleanSet$smaHIGH)$p.value
+cor.test(NewCleanSet$BULL_BEAR,NewCleanSet$smaLOW)$p.value
+
+```
+* There exists correlation significance between BULL_BEAR and each of all the variables except VOLUME and TICKVOLUME
+  
+  
+*
+### 2.0. Machine Learning Analysis 
+
+* 2.1. Load mlbench and caret packages respectively
+* 2.2. Ensure that dependent variable "BULL_BEAR" is of the factor class
+
+```{r}
+library(mlbench)
+library(caret)
+str(NewCleanSet)
+sapply(NewCleanSet,class)
+NewCleanSet$BULL_BEAR = as.factor(as.integer(NewCleanSet$BULL_BEAR))
+summary(NewCleanSet)
+
+```
+
+* 2.3. Perform feature selection. Correlation analyses findings in Section 1 already pointed to the fact that some
+       features have no association with the outcome of the dependent variable.
+* 2.4. Feature Selection using Boruta, mlbench and Caret packages respectively
+
+```{r}
+library(Boruta)
+
+# Feature Selection operation
+set.seed(7)
+boruta = Boruta(NewCleanSet$BULL_BEAR~.,data = NewCleanSet, doTrace = 4, maxRuns = 100)
+plot(boruta, las = 2, cex.axis = 0.5)
+
+# reclassify features that were designated as tentative
+bor = TentativeRoughFix(boruta)
+plot(bor, las = 2, cex.axis = 0.5)
+
+attStats(boruta)
+print(bor)
+
+# create object and limit features to only the 5 confirmed features from the boruta analysis + the dependent variable
+
+col_order2 = c("OPEN","HIGH","LOW","smaOPEN","smaLOW","BULL_BEAR")
+
+NewSet = NewCleanSet[, col_order2]
+View(NewSet)
+str(NewSet)
+levels(NewSet)
+```
+* The feature selection operation using the Boruta package works as follows:
+
+* Firstly, it introduces randomness into the data set by producing shuffled copies of all the features of 
+  interest (these are referred to as shadow features).
+
+* Next, it trains a random forest classifier on the extended data set and applies a feature importance measure 
+  (the default is Mean Decrease Accuracy) to ascertain the relevance of each of the features. Those with higher 
+  means are classified as more important.
+
+* Afterwards, at every given iteration, it checks whether a real feature has a higher importance than the best 
+  of its shadow features (in other words, it checks to see if the feature has a higher Z-score than the maximum 
+  Z-score of its shadow features) and therefore eliminates features which are termed highly irrelevant.
+
+*  Lastly, the Boruta algorithm stops either when all features gets confirmed or rejected or when it reaches a 
+  specified limit of random forest runs
+  
+  * 2.5. Split the NewSet features object into training and validation groups (objects)
+* 2.6. Split out validation dataset
+* 2.7. Do this by creating a list of 70% of the rows in the original dataset to serve as training set
+
+```{r}
+#LOW/BEARISH TREND
+LOW = NewSet[NewSet$BULL_BEAR == 0,]
+
+#HIGH/BULLISH TREND
+HIGH = NewSet[NewSet$BULL_BEAR == 1,]
+
+set.seed(7)
+validationIndex = createDataPartition(NewSet$BULL_BEAR , p=0.70, list = FALSE)
+
+#select 30% of the data for validation
+
+validation = NewSet[-validationIndex,]
+
+#use the remaining 70% of data to train the model
+dataset = NewSet[validationIndex,]
+
+# Check that the distribution of the dependent variable is similar in train and test sets
+prop.table(table(NewSet$BULL_BEAR))
+prop.table(table(dataset$BULL_BEAR))
+prop.table(table(validation$BULL_BEAR))
+```
+* The derived figures show that the ratio of the "LOW":"HIGH" was proportionally split
+
+* 2.8. Evaluate 8 Machine Learning Algorithms using  our Historical forex data
+* 2.9. Linear Algorithms - Generalized linear model (LG) and Linear Discriminate Analysis (LDA)
+* 2.9.1 Non-Linear Algorithms - K-Nearest Neighbors (KNN),Support Vector Machine(SVM), 
+        Neural Network(pcaNNEt),Multiple Layer Perceptron(MLP)
+* 2.9.2 ENSEMBLE METHODS: Random Forest (RF), Naive Bayes,
+* 2.9.3 Analysis is done using 10-fold cross validation with 3 repeats
+
+```{r}
+trainControl = trainControl(method = "repeatedcv", number = 10, repeats = 3)
+metric = "Accuracy"
+
+#1 LG
+set.seed(7)
+fit.glm = train(BULL_BEAR~., data=dataset, method="glm", metric=metric, trControl=trainControl)
+
+#2 LDA
+set.seed(7)
+fit.lda = train(BULL_BEAR~., data=dataset, method="lda", metric=metric, trControl=trainControl)
+
+#3 KNN
+set.seed(7)
+fit.knn = train(BULL_BEAR~., data=dataset, method="knn", metric=metric, trControl=trainControl)
+
+
+#4 Random Forest
+set.seed(7)
+fit.rf = train(BULL_BEAR~., data=dataset, method="rf", metric=metric, trControl=trainControl)
+
+#5 SVM
+set.seed(7)
+fit.svmLinear = train(BULL_BEAR~., data=dataset, method="svmLinear", metric=metric, trControl=trainControl)
+
+#6 Naive Bayes
+set.seed(7)
+fit.naive_bayes = train(BULL_BEAR~., data=dataset, method="naive_bayes", metric=metric, trControl=trainControl)
+
+#7 Multi Layer Perceptron
+set.seed(7)
+fit.mlp = train(BULL_BEAR~., data=dataset, method="mlp", metric=metric, trControl=trainControl)
+
+#8 Neural Network
+set.seed(7)
+fit.pcaNNet = train(BULL_BEAR~., data=dataset, method="pcaNNet", metric=metric, trControl=trainControl)
+
+
+# Compare algorithms
+results = resamples(list(LG=fit.glm, LDA=fit.lda, KNN=fit.knn,RF=fit.rf,  SVM=fit.svmLinear, NB = fit.naive_bayes, MLP = fit.mlp, NN=fit.pcaNNet)) 
+                          
+summary(results)
+dotplot(results)
+```
+
+####* Top three performing algorithms are LG,LDA SVM, with mean accuracies of 0.8628, 0.8619 and 0.8416 respectively
+
+
+#### Tune the top two learning algorithms
+
+* 4.18. Tuning for the LG learning algorithm
+
+```{r}
+trainControl = trainControl(method="repeatedcv", number=10, repeats=3) 
+metric = "Accuracy"
+
+#LG
+set.seed(7)
+grid = expand.grid(.parameter = seq(1,10, by=1))
+fit.LG_tuned = train(BULL_BEAR~.,data = dataset, method="glm", metric=metric, tuneGrid=grid, trControl=trainControl)
+fit.LG_tuned
+```
+* Tuning did not improve the LG model
+
+
+* 4.19. Tuning for the LDA learning algorithm
+
+```{r}
+trainControl = trainControl(method="repeatedcv", number=10, repeats=3) 
+metric = "Accuracy"
+
+#LDA
+set.seed(7)
+grid = expand.grid(.parameter = seq(1,10, by=1))
+fit.lda_tuned = train(BULL_BEAR~.,data = dataset, method="lda", metric=metric, tuneGrid=grid, trControl=trainControl)
+fit.lda_tuned
+```
+* Tuning did not improve the LDA model
+
+
+
+* 3. Finalize by building Model using LG
+* 3.1. Prepare the data transform for finalizing Model 
+
+```{r}
+set.seed(7)
+x = dataset[,1:6]
+preprocessParam = preProcess(x)
+x = predict(preprocessParam, x)
+
+# prepare the validation dataset
+set.seed(7)
+
+# transform the validation dataset
+validationX = predict(preprocessParam, validation[,1:6])
+```
+* 3.2. Make predictions and build confusion matrix for Model 1
+
+
+```{r}
+glmPredict = predict(fit.glm, newdata = validation)
+confusionMatrix(glmPredict, validation$BULL_BEAR)
+```
+
+* Model performed at an accuracy of 0.8697 with a specificity of 0.8742 with a 
+  sensitivity score of 0.8654. 
+
+* 3.3. Calculate AUC(ROC) for Model 1
+
+```{r}
+library(PRROC)
+sapply(glmPredict, class)
+sapply(validation, class)
+pred = as.numeric(as.character(glmPredict))
+valid = as.character(as.factor(validation$BULL_BEAR))
+valid = as.numeric(as.character(validation$BULL_BEAR))
+prroc_obj = roc.curve(scores.class0 = pred, weights.class0 = valid, curve = TRUE)
+plot(prroc_obj)
+```
+
+
+ 
